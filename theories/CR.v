@@ -1,6 +1,6 @@
 From MuMuT Require Import Prelude.
 From MuMuT.Utils Require Import Psh Ctx.
-From MuMuT Require Import Lang.
+From MuMuT.Lang Require Import Syntax Properties.
 
 (*|
 Basic Notions
@@ -156,23 +156,21 @@ And this completes our preliminary work.
 (*|
 ## Interpretation of types
 
-For each type constructor, we need to construct a bi-set interpreting the "nice" terms and co-terms. Depending
-on the natural polarity of the type former, we construct this by taking the completion of either a predicate on
-the terms or the co-terms of this type. These polarities are given by:
+For each type constructor, we need to construct a bi-set interpreting the "nice" terms and co-terms. Depending on
+the polarity of the type former, we construct this by taking the completion of either a predicate on the terms or
+the co-terms of this type. These predicate caracterize the (co-)patterns. Our polarities are given by:
 
-- Zero : -
-- One  : +
+- Zero : +
+- One  : -
 - Prod : - → - → -
 - Plus : + → + → +
 - Fun  : + → - → -
 |*)
-  Equations ok_zer : Pred (t- ⊥) :=
-    ok_zer Γ ZerK := T1 ;
-    ok_zer Γ _    := T0 .
+  Equations ok_zer : Pred (t+ ⊥) :=
+    ok_zer Γ _ := T0 .
 
-  Equations ok_one : Pred (t+ ⊤) :=
-    ok_one Γ OneI := T1 ;
-    ok_one Γ _    := T0 .
+  Equations ok_one : Pred (t- ⊤) :=
+    ok_one Γ _ := T0 .
 
   Equations ok_prod {A B} (P : Pred (t- A)) (Q : Pred (t- B)) : Pred (t- (A × B)) :=
     ok_prod P Q Γ (Fst k) := P Γ k ;
@@ -199,16 +197,16 @@ With all the "niceness" predicates defined we can now interpret any type by satu
 prove it is saturated, which was the whole point.
 |*)
   Equations interp_ty0 (A : ty0) : Pred2 A :=
-    interp_ty0 (⊥)      := ⇑⁻ ⟦⊥⟧ ;
-    interp_ty0 (⊤)      := ⇑⁺ ⟦⊤⟧ ;
+    interp_ty0 (⊥)      := ⇑⁺ ⟦⊥⟧ ;
+    interp_ty0 (⊤)      := ⇑⁻ ⟦⊤⟧ ;
     interp_ty0 (A × B)  := ⇑⁻ interp_ty0 A⁻ ⟦×⟧ interp_ty0 B⁻ ;
     interp_ty0 (A + B)  := ⇑⁺ interp_ty0 A⁺ ⟦+⟧ interp_ty0 B⁺ ;
     interp_ty0 (A → B) := ⇑⁻ interp_ty0 A⁺ ⟦→⟧ interp_ty0 B⁻ .
 
   Definition interp_sat A : saturated (interp_ty0 A).
     destruct A;
-      [ apply compN_sat
-      | apply compP_sat
+      [ apply compP_sat
+      | apply compN_sat
       | apply compN_sat
       | apply compP_sat
       | apply compN_sat ] .
@@ -289,7 +287,7 @@ the substitution), together with some use of the saturation property to land bac
     apply (O.(expand) RMu').
     unfold c_subst1; rewrite c_sub_sub.
     exact (X _ _ (append_interp_a X0 p)).
-  - exact (X0 OneI T1_0).
+  - dependent elimination k; inversion X0.
   - exact (X1 (Inl _) (X _ _ X0)).
   - exact (X1 (Inr _) (X _ _ X0)).
   - dependent elimination k; cbn in *; try now inversion X1.
@@ -307,7 +305,7 @@ the substitution), together with some use of the saturation property to land bac
       apply (fst (fst (interp_sat _))).
       * exact (X0 _ _ X1).
       * exact X2.
-  - exact (X0 ZerK T1_0).
+  - dependent elimination u; inversion X0.
   - exact (X2 (App _ _) (X _ _ X1 , X0 _ _ X1)).
   - exact (X1 (Fst _) (X _ _ X0)).
   - exact (X1 (Snd _) (X _ _ X0)).
